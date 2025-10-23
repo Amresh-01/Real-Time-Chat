@@ -1,0 +1,38 @@
+# Node_modules
+
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build directories
+build/
+dist/
+
+# React specific
+*.cache/
+.cache/
+public/static/
+
+# VSCode
+.vscode/
+
+# Optional: Coverage reports
+coverage/
+*.lcov
+
+# Optional: temporary files
+tmp/
+temp/
