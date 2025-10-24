@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-const UserScema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
-    fullname: {
+    username: {
       type: String,
       unique: true,
       required: true,
@@ -14,7 +14,6 @@ const UserScema = new mongoose.Schema(
       required: true,
       lowercase: true,
       trim: true, // trailing spaces ko delete kar deta hai ex- "    Amresh   " -->   "Amresh"
-      match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     },
     password: {
       type: String,

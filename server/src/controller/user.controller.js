@@ -1,0 +1,70 @@
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import bcrypt from "bcrypt";
+import User from "../models/user.model.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import ApiError from "../utils/ApiError.js";
+
+dotenv.config();
+
+const {
+  JWT_ACCESS_SECRET,
+  JWT_REFRESH_SECRET,
+  ACCESS_TOKEN_EXPIRES,
+  REFRESH_TOKEN_EXPIRES,
+  PASSWORD_RESET_TOKEN_EXP,
+} = process.env;
+
+function signAccessToken(user) {
+  return jwt.sign({ sub: user._id, role: user.role }, JWT_ACCESS_SECRET, {
+    expiresIn: ACCESS_TOKEN_EXPIRES || "1h",
+  });
+}
+
+function signRefreshToken(user) {
+  return jwt.sign({ sub: user._id }, JWT_REFRESH_SECRET, {
+    expiresIn: REFRESH_TOKEN_EXPIRES || "7d",
+  });
+}
+
+export const registerUser = asyncHandler(async (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || !email || !password) {
+    throw new ApiError(400, "Missing required fields");
+  }
+
+  if (!/\S+@\S+\.\S+/.test(email)) {
+    throw new ApiError(400, "Invalid email format");
+  }
+
+  if (
+    !/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+      password
+    )
+  ) {
+    throw new ApiError(
+      400,
+      "Password must be at least 8 characters long and include at least one letter, one number, and one special character (@, $, !, %, *, ?, &)."
+    );
+  }
+
+  const exists = await User.findOne({ $or: [{ email }, { username }] });
+  if (exists) {
+    throw new ApiError(409, "User with given email or username already exists");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = new User({ username, email, password: hashedPassword });
+  await user.save();
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        { id: user._id, username: user.username, email: user.email },
+        "User registered successfully"
+      )
+    );
+});
