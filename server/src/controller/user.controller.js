@@ -28,7 +28,7 @@ function signRefreshToken(user) {
   });
 }
 
-export const registerUser = asyncHandler(async (req, res) => {
+const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     throw new ApiError(400, "Missing required fields");
@@ -66,5 +66,53 @@ export const registerUser = asyncHandler(async (req, res) => {
         { id: user._id, username: user.username, email: user.email },
         "User registered successfully"
       )
+    );
+});
+
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!/\S+@\S+\.\S+/.test(email)) {
+    throw new ApiError(400, "Invalid email format");
+  }
+
+  if (
+    !/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+      password
+    )
+  ) {
+    throw new ApiError(
+      400,
+      "Password must be at least 8 characters long and include at least one letter, one number, and one special character (@, $, !, %, *, ?, &)."
+    );
+  }
+
+  let user = await User.findOne({ email }).select("-refreshToken");
+  if (!user) {
+    throw new ApiError(401, "Invalid email");
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    throw new ApiError(401, "Invalid password");
+  }
+
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  };
+
+  return res
+    .status(200)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(
+      new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
     );
 });
