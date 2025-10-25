@@ -72,6 +72,10 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
+  }
+
   if (!/\S+@\S+\.\S+/.test(email)) {
     throw new ApiError(400, "Invalid email format");
   }
@@ -107,6 +111,7 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   };
 
   return res

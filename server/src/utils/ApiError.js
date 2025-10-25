@@ -1,4 +1,4 @@
-class ApiError extends error {
+class ApiError extends Error {
   constructor(
     statuscode,
     message = "The operatin has been failed.",
