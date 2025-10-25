@@ -161,4 +161,86 @@ const getcurrentUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, logoutUser, getcurrentUser };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const UserId = req.user?.id;
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+
+  if (!UserId) {
+    throw new ApiError(401, "User is not authenticated");
+  }
+
+  const user = await User.findById(UserId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (!newPassword || !oldPassword || !confirmPassword) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) {
+    throw new ApiError(401, "Old password is incorrect");
+  }
+
+  if (
+    !/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+      newPassword
+    )
+  ) {
+    throw new ApiError(
+      400,
+      "Password must be at least 8 characters long and include at least one letter, one number, and one special character (@, $, !, %, *, ?, &)."
+    );
+  }
+
+  if (newPassword != confirmPassword) {
+    throw new ApiError(400, "the newPassword is Not matching.");
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Password changed successfully"));
+});
+
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const UserId = req.user?.id;
+  const { newUsername, newEmail } = req.body;
+
+  if (!UserId) {
+    throw new ApiError("User not found");
+  }
+
+  if (!newUsername && !newEmail) {
+    throw new ApiError(400, "No data provided for update");
+  }
+
+  const updateUser = await User.findByIdAndUpdate(
+    UserId,
+    {
+      ...(newUsername && { username: newUsername }),
+      ...(newEmail && { email: newEmail }),
+    },
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken");
+
+  if (!updateUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updateUser, "Profile updated Successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getcurrentUser,
+  changeCurrentPassword,
+  updateUserProfile,
+};
