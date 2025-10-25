@@ -13,7 +13,6 @@ const {
   JWT_REFRESH_SECRET,
   ACCESS_TOKEN_EXPIRES,
   REFRESH_TOKEN_EXPIRES,
-  PASSWORD_RESET_TOKEN_EXP,
 } = process.env;
 
 // This will Generate JWT Access and Refresh Token
