@@ -16,8 +16,9 @@ const {
   PASSWORD_RESET_TOKEN_EXP,
 } = process.env;
 
+// This will Generate JWT Access and Refresh Token
 function signAccessToken(user) {
-  return jwt.sign({ sub: user._id, role: user.role }, JWT_ACCESS_SECRET, {
+  return jwt.sign({ sub: user._id }, JWT_ACCESS_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRES || "1h",
   });
 }
@@ -111,8 +112,53 @@ const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions) // Yeh line user ke browser me ek secure cookie set karti hai jisme refresh token store hota hai.
     .json(
       new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
     );
 });
+
+const logoutUser = asyncHandler(async (req, res) => {
+  const UserId = req.user?.id;
+  if (!UserId) {
+    throw new ApiError(401, "User is not authenticated");
+  }
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
+    .json(new ApiResponse(200, null, "Logout successful"));
+});
+
+const getcurrentUser = asyncHandler(async (req, res) => {
+  const UserId = req.user?.id;
+
+  if (!UserId) {
+    throw new ApiError(401, "User is not authenticated");
+  }
+
+  const user = await User.findById(UserId).select("-refreshToken");
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { id: user._id, username: user.username, email: user.email },
+        "Current user retrieved successfully"
+      )
+    );
+});
+
+export { registerUser, loginUser, logoutUser, getcurrentUser };
