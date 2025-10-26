@@ -1,0 +1,312 @@
+{
+	"info": {
+		"_postman_id": "8ddc5431-967b-4264-b34b-a9ac21abe431",
+		"name": "Real Time Chat",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44436051"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "For Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"amresh\",\r\n  \"email\": \"amre123@example.com\",\r\n  \"password\": \"Test@1234\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "For Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"amresh\",\r\n  \"email\": \"amre123@example.com\",\r\n  \"password\": \"Test@1234\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGZjZjY0NzFlNGYwYThmZGQzNTY0MDYiLCJpYXQiOjE3NjE0MDk1MzYsImV4cCI6MTc2MTQxMzEzNn0.nDJu3cRpy-UBwLV8ALY6-bkrmWYWmwLCldGxnpHf-GU",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/auth/getCurrentUser",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"getCurrentUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update The Username and Email",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGZjZjY0NzFlNGYwYThmZGQzNTY0MDYiLCJpYXQiOjE3NjE0MDk1MzYsImV4cCI6MTc2MTQxMzEzNn0.nDJu3cRpy-UBwLV8ALY6-bkrmWYWmwLCldGxnpHf-GU",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"newUsername\": \"amresh_updated\",\r\n  \"newEmail\": \"amresh_updated@example.com\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/updateProfile",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"updateProfile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "For Changing Password",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGZjZjY0NzFlNGYwYThmZGQzNTY0MDYiLCJpYXQiOjE3NjE0MDk1MzYsImV4cCI6MTc2MTQxMzEzNn0.nDJu3cRpy-UBwLV8ALY6-bkrmWYWmwLCldGxnpHf-GU",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"oldPassword\": \"Test@1234\",\r\n  \"newPassword\": \"NewPass@123\",\r\n  \"confirmPassword\": \"NewPass@123\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/changePassword",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Room",
+			"item": [
+				{
+					"name": "For Creating Room",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGZjZjY0NzFlNGYwYThmZGQzNTY0MDYiLCJpYXQiOjE3NjE0NDk3ODQsImV4cCI6MTc2MTQ1MzM4NH0.MulXRiK7DRhhvWxarmdTTkE9cZW6-c4vDWz4gNE1XH4",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"RoomName\" : \"Developers Hub\" \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/rooms/createRoom",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"rooms",
+								"createRoom"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Getting All the Rooms",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGZjZjY0NzFlNGYwYThmZGQzNTY0MDYiLCJpYXQiOjE3NjE0NDk3ODQsImV4cCI6MTc2MTQ1MzM4NH0.MulXRiK7DRhhvWxarmdTTkE9cZW6-c4vDWz4gNE1XH4",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"RoomName\" : \"Developers Hub\" \r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/rooms/getRooms",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"rooms",
+								"getRooms"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Message",
+			"item": [
+				{
+					"name": "Getting Message By Room",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGZjZjY0NzFlNGYwYThmZGQzNTY0MDYiLCJpYXQiOjE3NjE0NDk3ODQsImV4cCI6MTc2MTQ1MzM4NH0.MulXRiK7DRhhvWxarmdTTkE9cZW6-c4vDWz4gNE1XH4",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"RoomName\" : \"Developers Hub\" \r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/messages/68fd985936ad7b3f576e5af3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"messages",
+								"68fd985936ad7b3f576e5af3"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
