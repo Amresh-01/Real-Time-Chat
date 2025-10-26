@@ -4,6 +4,7 @@ import connectDB from "./src/db/db.connect.js";
 import cors from "cors";
 import authRoutes from "./src/routes/user.route.js";
 import roomRoutes from "./src/routes/room.route.js";
+import messageRoutes from "./src/routes/message.route.js";
 import session from "express-session";
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
+app.use("/api/messages", messageRoutes);
 
 const startServer = async () => {
   try {
