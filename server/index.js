@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./src/db/db.connect.js";
 import cors from "cors";
 import authRoutes from "./src/routes/user.route.js";
+import roomRoutes from "./src/routes/room.route.js";
 import session from "express-session";
 
 dotenv.config();
@@ -14,7 +15,6 @@ app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 app.use(
   session({
@@ -29,6 +29,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/rooms", roomRoutes);
 
 const startServer = async () => {
   try {
