@@ -4,6 +4,6 @@ import { protect } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/messages/:roomId", protect, getMessagesByRoom);
+router.get("/:roomId", protect, getMessagesByRoom);
 
 export default router;

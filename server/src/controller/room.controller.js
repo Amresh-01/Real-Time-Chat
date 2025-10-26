@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import Room from "../models/user.model.js";
+import Room from "../models/room.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
@@ -24,20 +24,14 @@ const createRoom = asyncHandler(async (req, res) => {
   });
   await room.save();
 
-  res
-    .status(201)
-    .json(new ApiResponse(true, "Room created successfully", room));
+  res.status(201).json(new ApiResponse(201, room, "Room created successfully"));
 });
 
 const getRooms = asyncHandler(async (req, res) => {
-  const rooms = await Room.find().populate(
-    "members",
-    "-password",
-    "username email"
-  );
+  const rooms = await Room.find().populate("members", "-password");
   res
     .status(200)
-    .json(new ApiResponse(true, "Rooms fetched successfully", rooms));
+    .json(new ApiResponse(200, rooms, "Rooms fetched successfully"));
 });
 
 export { createRoom, getRooms };
