@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const RoomSchema = new mongoose.Schema(
   {
-    name: {
+    RoomName: {
       type: String,
       required: true,
       trim: true,
