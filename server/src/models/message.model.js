@@ -4,10 +4,11 @@ import Room from "./room.model.js";
 const MessageSchema = new mongoose.Schema(
   {
     sender: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
     },
+
     message: {
       type: String,
       required: true,

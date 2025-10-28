@@ -34,4 +34,16 @@ const getRooms = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, rooms, "Rooms fetched successfully"));
 });
 
-export { createRoom, getRooms };
+const deleteRoom = asyncHandler(async (req, res) => {
+  const { roomId } = req.params;
+  if (!roomId) {
+    throw new ApiError(400, "Room ID is required");
+  }
+  const room = await Room.findByIdAndDelete(roomId);
+  if (!room) {
+    throw new ApiError(404, "Room not found");
+  }
+  res.status(200).json(new ApiResponse(200, null, "Room deleted successfully"));
+});
+
+export { createRoom, getRooms, deleteRoom };

@@ -5,7 +5,7 @@ import { API_BASE_URL } from "../api/api.js";
 import axios from "axios";
 
 export default function Rooms() {
-  const [rooms, setRooms] = useState([]); // ✅ always initialize as array
+  const [rooms, setRooms] = useState([]); 
   const [RoomName, setRoomName] = useState("");
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -14,7 +14,7 @@ export default function Rooms() {
     if (token) fetchRooms();
   }, [token]);
 
-  // ✅ Fetch all rooms safely
+  // Fetch all rooms
   const fetchRooms = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -22,9 +22,6 @@ export default function Rooms() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("Rooms API response:", res.data);
-
-      // ✅ handle both response shapes
       const fetchedRooms = Array.isArray(res.data.data)
         ? res.data.data
         : Array.isArray(res.data)
@@ -34,13 +31,11 @@ export default function Rooms() {
       setRooms(fetchedRooms);
     } catch (error) {
       console.error("Error fetching rooms:", error);
-      if (error.response?.status === 401) {
-        alert("Unauthorized - login again");
-      }
+      if (error.response?.status === 401) alert("Unauthorized - login again");
     }
   };
 
-  // ✅ Create new room
+  // Create new room
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!RoomName.trim()) return;
@@ -53,15 +48,32 @@ export default function Rooms() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRoomName("");
-      await fetchRooms(); // refresh list
+      await fetchRooms();
     } catch (error) {
       console.error("Error creating room:", error);
       if (error.response?.status === 401) alert("Unauthorized - login again");
     }
   };
 
+  // Navigate to chat room
   const handleRoomClick = (roomId) => {
     navigate(`/chat/${roomId}`);
+  };
+
+  
+  const handleDelete = async (roomId) => {
+    if (!window.confirm("Are you sure you want to delete this room?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE_URL}/rooms/deleteRoom/${roomId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchRooms(); // refresh list after delete
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      alert("Failed to delete room");
+    }
   };
 
   return (
@@ -88,11 +100,28 @@ export default function Rooms() {
           rooms.map((room) => (
             <li
               key={room._id}
-              onClick={() => handleRoomClick(room._id)}
-              className="cursor-pointer p-4 bg-white rounded-md shadow hover:bg-blue-50 transition-colors duration-200 flex justify-between items-center"
+              className="p-4 bg-white rounded-md shadow flex justify-between items-center hover:bg-blue-50 transition-colors duration-200"
             >
-              <span className="text-gray-800 font-medium">{room.RoomName}</span>
-              <span className="text-gray-400 text-sm">Enter →</span>
+              <span
+                className="text-gray-800 font-medium cursor-pointer"
+                onClick={() => handleRoomClick(room._id)}
+              >
+                {room.RoomName}
+              </span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleDelete(room._id)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition-colors duration-200"
+                >
+                  Delete
+                </button>
+                <span
+                  className="text-gray-400 text-sm cursor-pointer"
+                  onClick={() => handleRoomClick(room._id)}
+                >
+                  Enter →
+                </span>
+              </div>
             </li>
           ))
         ) : (

@@ -1,108 +1,103 @@
+import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
-import User from "../models/userModel.js";
-import Message from "../models/messageModel.js";
-import chatRoom from "../models/chatRoomModel.js";
+import dotenv from "dotenv";
+import { saveMessage } from "../controller/message.controller.js";
+import User from "../models/user.model.js";
+import Room from "../models/room.model.js";
 
-export const chatSocket = (io) => {
-  io.on("connection", async (socket) => {
-    console.log("New Client Connected:", socket.id);
+dotenv.config();
 
-    const token = socket.handshake.auth?.token;
+export const ChatSocket = (server) => {
+  const io = new Server(server, {
+    cors: {
+      origin: ["http://localhost:5173"], // ✅ frontend origin
+      credentials: true,
+    },
+  });
 
-    if (!token) {
-      console.log("No token provided, disconnecting...");
-      socket.disconnect(true);
-      return;
-    }
-
+  // ✅ Authentication middleware for sockets
+  io.use(async (socket, next) => {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.userId = decoded.id;
-      console.log(`User authenticated: ${socket.userId}`);
+      const token = socket.handshake.auth?.token; // safer
+      if (!token) return next(new Error("Authentication token missing"));
+
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      const user = await User.findById(decoded.sub).select("-password");
+      if (!user) return next(new Error("User not found"));
+
+      socket.user = user;
+      next();
     } catch (err) {
-      console.log("Invalid token");
-      socket.disconnect(true);
-      return;
+      console.error("❌ Socket auth error:", err.message);
+      next(new Error("Authentication failed"));
     }
+  });
 
+  io.on("connection", (socket) => {
+    console.log(`✅ User connected: ${socket.user.username}`);
+
+    // ✅ Join Room
     socket.on("join_room", async (roomId) => {
-      if (!roomId || !mongoose.Types.ObjectId.isValid(roomId)) {
-        return socket.emit("error", { message: "Invalid room ID" });
-      }
-
-      const roomExists = await chatRoom.findById(roomId);
-      if (!roomExists) {
-        return socket.emit("error", { message: "Room does not exist" });
-      }
-
-      socket.join(roomId);
-
-      const user = await User.findById(socket.userId).select("username email");
-
-      console.log(`User ${socket.userId} joined room ${roomId}`);
-      socket.to(roomId).emit("user_joined", {
-        userId: user._id,
-        username: user.username,
-        message: `${user.username} joined the room`,
-      });
-
-      io.to(roomId).emit("system_message", `${user.username} joined the room.`);
-    });
-
-    socket.on("send_message", async ({ roomId, content }) => {
-      if (!roomId || !mongoose.Types.ObjectId.isValid(roomId)) {
-        return socket.emit("error", { message: "Invalid room ID" });
-      }
-      if (!content?.trim()) return;
-
-      const roomExists = await chatRoom.findById(roomId);
-      if (!roomExists) {
-        return socket.emit("error", { message: "Room does not exist" });
-      }
-
       try {
-        const message = new Message({
-          room: roomId,
-          sender: socket.userId,
-          content: content.trim(),
+        const room = await Room.findById(roomId);
+        if (!room) {
+          socket.emit("system_message", "Room not found");
+          return;
+        }
+
+        socket.join(roomId);
+        socket.currentRoom = roomId;
+
+        // Add user to room if not already a member
+        if (!room.members.includes(socket.user._id)) {
+          room.members.push(socket.user._id);
+          await room.save();
+        }
+
+        io.to(roomId).emit("user_joined", {
+          message: `${socket.user.username} joined the room.`,
         });
 
-        const savedMessage = await message.save();
-        const populatedMessage = await savedMessage.populate(
-          "sender",
-          "username email"
-        );
-
-        io.to(roomId).emit("receive_message", populatedMessage);
-
-        console.log(`User ${socket.userId} sent a message in ${roomId}`);
-      } catch (err) {
-        console.error("Error saving message:", err);
-        socket.emit("error", { message: "Failed to send message" });
+        console.log(`➡️ ${socket.user.username} joined room ${roomId}`);
+      } catch (error) {
+        console.error("Join room error:", error.message);
+        socket.emit("system_message", "Error joining room");
       }
     });
 
-    // Leave Room
-    socket.on("leave_room", async (roomId) => {
-      if (!roomId || !mongoose.Types.ObjectId.isValid(roomId)) return;
+    // ✅ Send Message
+    socket.on("send_message", async ({ roomId, message }) => {
+      try {
+        if (!roomId || !message.trim()) return;
 
-      socket.leave(roomId);
-      const user = await User.findById(socket.userId).select("username email");
-      console.log(`User ${socket.userId} left room ${roomId}`);
+        const savedMessage = await saveMessage(
+          roomId,
+          socket.user._id,
+          message.trim()
+        );
 
-      socket.to(roomId).emit("user_left", {
-        userId: user._id,
-        username: user.username,
-        message: `${user.username} left the room`,
-      });
-
-      io.to(roomId).emit("system_message", `${user.username} left the room.`);
+        io.to(roomId).emit("receive_message", savedMessage);
+        console.log(`💬 ${socket.user.username}: ${message}`);
+      } catch (error) {
+        console.error("Message send error:", error.message);
+        socket.emit("system_message", "Failed to send message");
+      }
     });
 
-    // Disconnect
+    // ✅ Leave Room
+    socket.on("leave_room", (roomId) => {
+      socket.leave(roomId);
+      io.to(roomId).emit("user_left", {
+        message: `${socket.user.username} left the room.`,
+      });
+      console.log(`↩️ ${socket.user.username} left room ${roomId}`);
+    });
+
+    // ✅ Disconnect
     socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
+      console.log(`❌ User disconnected: ${socket.user.username}`);
     });
   });
+
+  return io;
 };
