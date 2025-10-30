@@ -34,9 +34,8 @@ export const ChatSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log(`✅ User connected: ${socket.user.username}`);
+    console.log(`User connected: ${socket.user.username}`);
 
-    // ✅ Join Room
     socket.on("join_room", async (roomId) => {
       try {
         const room = await Room.findById(roomId);

@@ -2,189 +2,160 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
-import { API_BASE_URL } from "../api/api";
-import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../api/api.js";
 
 export default function Chat() {
   const { roomId } = useParams();
-  const { token } = useAuth();
-  console.log(" Token in Chat:", token);
-
-  const [user, setUser] = useState(null);
   const [message, setMessage] = useState("");
+  const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [loadingMessages, setLoadingMessages] = useState(true);
-
+  const [loading, setLoading] = useState(false);
   const socketRef = useRef(null);
-  const messagesEndRef = useRef(null);
 
+  const token = localStorage.getItem("token"); // ✅ fetch saved token
 
+  // ✅ Fetch current logged-in user
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
- 
-  useEffect(() => {
-    if (!token) return;
-
-    const fetchUser = async () => {
+    const getCurrentUser = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/auth/getCurrentUser`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
         setUser(res.data.data);
-      } catch (err) {
-        console.error(
-          "❌ Failed to fetch user:",
-          err.response?.data || err.message
-        );
-      } finally {
-        setLoadingUser(false);
+      } catch (error) {
+        console.error("Error fetching user:", error);
       }
     };
-
-    fetchUser();
+    if (token) getCurrentUser();
   }, [token]);
 
-  
+  // ✅ Fetch chat messages
   useEffect(() => {
     if (!roomId || !token) return;
 
     const fetchMessages = async () => {
+      setLoading(true);
       try {
         const res = await axios.get(`${API_BASE_URL}/messages/${roomId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-        setMessages(res.data.data.reverse());
-      } catch (err) {
-        console.error(" Failed to fetch messages:", err);
+        setMessages(res.data.data || []);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
       } finally {
-        setLoadingMessages(false);
+        setLoading(false);
       }
     };
 
     fetchMessages();
   }, [roomId, token]);
 
- 
+  // ✅ Setup socket connection
   useEffect(() => {
-    if (!roomId || !token) return;
+    if (!roomId || !user) return;
 
-    const socket = io("http://localhost:8080", {
-      auth: { token },
+    const SOCKET_URL = API_BASE_URL.replace("/api", "");
+    const socket = io(SOCKET_URL, {
       transports: ["websocket"],
+      auth: { token }, // ✅ send token in socket handshake
     });
 
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("✅ Connected to backend:", socket.id);
-      socket.emit("join_room", roomId);
+      socket.emit("joinRoom", roomId);
     });
 
-    socket.on("receive_message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
+    socket.on("receiveMessage", (newMessage) => {
+      setMessages((prev) => [...prev, newMessage]);
     });
 
-    socket.on("system_message", (msg) => {
-      setMessages((prev) => [...prev, { message: msg, system: true }]);
-    });
-
-    socket.on("user_joined", (data) => {
-      setMessages((prev) => [...prev, { message: data.message, system: true }]);
-    });
-
-    socket.on("user_left", (data) => {
-      setMessages((prev) => [...prev, { message: data.message, system: true }]);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("❌ Socket error:", err.message);
-    });
-
-    // Cleanup on unmount
     return () => {
-      socket.emit("leave_room", roomId);
       socket.disconnect();
     };
-  }, [roomId, token]);
+  }, [roomId, user, token]);
 
   // ✅ Send message
   const sendMessage = () => {
-    if (!message.trim() || !socketRef.current) return;
-    socketRef.current.emit("send_message", { roomId, message });
+    if (!message.trim() || !user || !socketRef.current) return;
+
+    const messageData = { roomId, message: message.trim(), sender: user._id };
+    socketRef.current.emit("sendMessage", messageData);
     setMessage("");
   };
 
-  // ✅ Handle enter key
-  const handleKeyDown = (e) => {
+  const handleKeyPress = (e) => {
     if (e.key === "Enter") sendMessage();
   };
 
-  // ✅ Show loading states
-  if (loadingUser || loadingMessages)
+  if (loading)
     return (
-      <div className="text-center mt-20 text-gray-600">
-        Loading chat data...
-      </div>
+      <div className="text-center mt-20 text-gray-600">Loading messages...</div>
     );
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-white shadow p-4 flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Room: {roomId}</h2>
-        <span className="text-gray-700">
-          👤 {user ? user.username : "Fetching user..."}
-        </span>
+      <div className="bg-white shadow px-6 py-4 flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Chat Room: {roomId}
+        </h2>
+        <span className="text-gray-600">User: {user?.username}</span>
       </div>
 
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-gray-400 text-center italic mt-10">
+          <div className="text-center text-gray-500 mt-10">
             No messages yet. Start the conversation!
           </div>
         ) : (
-          messages.map((msg, idx) =>
-            msg.system ? (
-              <div key={idx} className="text-center text-gray-500 italic">
-                {msg.message}
-              </div>
-            ) : (
+          messages.map((msg) => {
+            const isOwnMessage = msg.sender._id === user?._id;
+            return (
               <div
-                key={idx}
-                className={`max-w-xs p-3 rounded-lg ${
-                  msg.sender?._id === user?._id
-                    ? "bg-blue-500 text-white self-end ml-auto"
+                key={msg._id}
+                className={`max-w-xs md:max-w-md px-4 py-2 rounded-xl border ${
+                  isOwnMessage
+                    ? "bg-blue-600 text-white self-end"
                     : "bg-gray-200 text-gray-800 self-start"
-                }`}
+                } flex flex-col`}
               >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-semibold">
+                    {isOwnMessage ? "You" : msg.sender.username}
+                  </span>
+                  <small className="text-xs text-gray-400">
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </small>
+                </div>
                 <div>{msg.message}</div>
               </div>
-            )
-          )
+            );
+          })
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input box */}
-      <div className="bg-white p-4 flex gap-2 border-t">
+      <div className="bg-white p-4 flex items-center gap-2 border-t border-gray-300">
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyPress={handleKeyPress}
           placeholder="Type a message..."
-          className="flex-1 px-4 py-2 border rounded-full"
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
         <button
           onClick={sendMessage}
           disabled={!message.trim()}
-          className={`px-6 py-2 rounded-full text-white font-semibold ${
+          className={`px-6 py-2 rounded-full text-white font-semibold transition-colors ${
             message.trim()
-              ? "bg-blue-500 hover:bg-blue-600"
+              ? "bg-blue-600 hover:bg-blue-700"
               : "bg-gray-400 cursor-not-allowed"
           }`}
         >
